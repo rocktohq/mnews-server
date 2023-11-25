@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -106,7 +106,7 @@ async function run() {
     });
 
     // * Get APIs
-    // Get All Users [ADMIN]
+    // Get All Users [ADMIN ONLY]
     app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const result = await userCollection.find().toArray();
@@ -154,7 +154,7 @@ async function run() {
     app.get("/api/trending-articles", async (req, res) => {
       try {
         const sort = { views: -1 };
-        const query = { isPublished: true };
+        const query = { status: "published" };
         const limit = 6;
 
         const articles = await articleCollection
@@ -168,16 +168,54 @@ async function run() {
       }
     });
 
-    // Get All Articles [PUBLIC]
-    app.get("/api/articles", (req, res) => {
-      const result = articleCollection.find({ isPublished: true }).toArray();
+    // Get All Articles [ADMIN ONLY]
+    app.get(
+      "/api/admin/articles",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const result = await articleCollection.find().toArray();
+          res.send(result);
+        } catch (err) {
+          res.send(err);
+        }
+      }
+    );
+
+    // Get All Published Articles [PUBLIC]
+    app.get("/api/articles", async (req, res) => {
+      try {
+        const result = await articleCollection
+          .find({ status: "published" })
+          .toArray();
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
     });
 
     // Get All Premium Articles [LOGGEDIN USER => PREMIUM USER]
-    app.get("/api/articles", verifyToken, (req, res) => {
-      const result = articleCollection
-        .find({ isPublished: true, isPremium: true })
-        .toArray();
+    app.get("/api/articles/premium", verifyToken, async (req, res) => {
+      try {
+        const result = await articleCollection
+          .find({ status: "published", isPremium: true })
+          .toArray();
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // Get Single Article [LOGGEDIN USER]
+    app.get("/api/articles/:id", verifyToken, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id), status: "published" };
+        const result = await articleCollection.findOne(query);
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
     });
 
     // Get Publishers [PUBLIC]
@@ -229,6 +267,20 @@ async function run() {
       } catch (error) {
         res.send(error);
       }
+    });
+
+    // * Post Publisher [ADMIN ONLY]
+    app.post("/api/publishers", verifyToken, async (req, res) => {
+      const article = req.body;
+      const result = await articleCollection.insertOne(article);
+      res.send(result);
+    });
+
+    // Post Article
+    app.post("/api/articles", verifyToken, async (req, res) => {
+      const article = req.body;
+      const result = await articleCollection.insertOne(article);
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
