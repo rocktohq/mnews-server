@@ -30,9 +30,40 @@ async function run() {
   try {
     // * Collections
     const articleCollection = client.db("mNews").collection("articles");
+    const publisherCollection = client.db("mNews").collection("publishers");
+    const tagCollection = client.db("mNews").collection("tags");
+    const reviewCollection = client.db("mNews").collection("reviews");
 
     // * Get APIs
-    // Get Articles
+    // Get Trending Articles
+    try {
+      app.get("/api/trending-articles", async (req, res) => {
+        const sort = { views: -1 };
+        const query = { isPublished: true };
+        const limit = 6;
+
+        const articles = await articleCollection
+          .find(query)
+          .sort(sort)
+          .limit(limit)
+          .toArray();
+        res.send(articles);
+      });
+    } catch (err) {
+      res.send(err);
+    }
+
+    // Get Publishers
+    try {
+      app.get("/api/publishers", async (req, res) => {
+        const publishers = await publisherCollection.find().toArray();
+        res.send(publishers);
+      });
+    } catch (err) {
+      res.send(err);
+    }
+
+   
 
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to MongoDB!");

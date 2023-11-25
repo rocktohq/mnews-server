@@ -1,0 +1,111 @@
+[
+    {
+        "title": "New Quantum Computing Breakthrough Promises Unprecedented Speeds",
+        "image": "https://i.ibb.co/T0SbH7F/girls-education.jpg",
+        "publisher": {
+            "name": "Tech Innovations",
+            "logo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "tags": [
+            "technology",
+            "quantum computing",
+            "innovation"
+        ],
+        "description": "Researchers have achieved a major breakthrough in quantum computing, bringing us closer to the era of supercomputers with unparalleled processing speeds. This development has significant implications for various industries, from cryptography to scientific simulations.",
+        "author": {
+            "name": "Monir Vai",
+            "email": "monir@gmail.com",
+            "photo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "isPremium": true,
+        "isPublished": true
+    },
+    {
+        "title": "AI-Powered Robots Revolutionize Manufacturing",
+        "image": "https://i.ibb.co/T0SbH7F/girls-education.jpg",
+        "publisher": {
+            "name": "RoboTech Today",
+            "logo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "tags": [
+            "technology",
+            "artificial intelligence",
+            "robotics"
+        ],
+        "description": "In a groundbreaking development, AI-powered robots are transforming the manufacturing landscape. These robots, equipped with advanced machine learning algorithms, enhance efficiency and precision in production processes, marking a new era in industrial automation.",
+        "author": {
+            "name": "Rockto",
+            "email": "rockto@gmail.com",
+            "photo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "isPremium": false,
+        "isPublished": false,
+        "views": 1
+    },
+    {
+        "title": "5G Networks Expand Globally, Unlocking Faster Connectivity",
+        "image": "https://i.ibb.co/T0SbH7F/girls-education.jpg",
+        "publisher": {
+            "name": "Connectivity Chronicle",
+            "logo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "tags": [
+            "technology",
+            "5G",
+            "connectivity"
+        ],
+        "description": "The global expansion of 5G networks is reshaping the way we connect and communicate. With faster download and upload speeds, low latency, and increased capacity, 5G is paving the way for the widespread adoption of IoT devices and advanced mobile applications.",
+        "author": {
+            "name": "Rockto",
+            "email": "rockto@gmail.com",
+            "photo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "isPremium": false,
+        "isPublished": true,
+        "views": 2
+    },
+    {
+        "title": "Augmented Reality Glasses Set to Revolutionize User Experience",
+        "image": "https://i.ibb.co/T0SbH7F/girls-education.jpg",
+        "publisher": {
+            "name": "AR Insights",
+            "logo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "tags": [
+            "technology",
+            "augmented reality",
+            "wearables"
+        ],
+        "description": "The upcoming release of advanced augmented reality glasses promises to revolutionize the user experience. From immersive gaming to real-time navigation, these AR glasses offer a glimpse into the future of wearable technology.",
+        "author": {
+            "name": "Monir Vai",
+            "email": "monir@gmail.com",
+            "photo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "isPremium": true,
+        "isPublished": true,
+        "views": 30
+    },
+    {
+        "title": "Cybersecurity Threats on the Rise as Remote Work Continues",
+        "image": "https://i.ibb.co/T0SbH7F/girls-education.jpg",
+        "publisher": {
+            "name": "Cyber Watch",
+            "logo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "tags": [
+            "technology",
+            "cybersecurity",
+            "remote work"
+        ],
+        "description": "The increase in remote work has led to a surge in cybersecurity threats. As businesses adapt to new digital landscapes, the need for robust cybersecurity measures becomes more critical than ever to protect sensitive data and ensure a secure online environment.",
+        "author": {
+            "name": "Monir Vai",
+            "email": "monir@gmail.com",
+            "photo": "https://i.ibb.co/T0SbH7F/girls-education.jpg"
+        },
+        "isPremium": false,
+        "isPublished": true,
+        "views": 100
+    }
+]
