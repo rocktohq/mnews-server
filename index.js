@@ -1,15 +1,51 @@
 const express = require("express");
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
-const port = process.env.PORT || 5000;
 
+const port = process.env.PORT || 5000;
 const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://m-newshq.web.app",
+      "https://m-newshq.firebaseapp.com",
+    ],
+    credentials: true,
+  })
+);
 
+// Token Verification
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  if (!token) return res.status(401).send({ message: "Unauthorized access" });
+  jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+    if (error) return res.status(401).send({ message: "Unauthorized access" });
+    req.user = decoded;
+    next();
+  });
+};
+
+// Admin Verification
+const verifyAdmin = async (req, res, next) => {
+  const email = req.decoded.email;
+  const query = { email: email };
+  const user = await userCollection.findOne(query);
+  const isAdmin = user?.role === "admin";
+  if (!isAdmin) {
+    return res.status(403).send({ message: "Forbidden access" });
+  }
+  next();
+};
+
+// * Default Route
 app.get("/", (req, res) => {
   res.send("mNews Server is running...");
 });
@@ -35,9 +71,43 @@ async function run() {
     const reviewCollection = client.db("mNews").collection("reviews");
     const userCollection = client.db("mNews").collection("users");
 
+    // * JWT Related APIs
+    // JWT API
+    app.post("/api/jwt", (req, res) => {
+      try {
+        const user = req.body;
+        const token = jwt.sign(user, process.env.JWT_SECRET, {
+          expiresIn: "24h",
+        });
+
+        res
+          .cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 1000 * 60 * 60 * 24,
+          })
+          .send({ Action: "Token form Local", success: true, token });
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // LogOut API
+    app.post("/api/logout", (req, res) => {
+      try {
+        const user = req.body;
+        res
+          .clearCookie("token", { maxAge: 0 })
+          .send({ Action: "Logout user", success: true });
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
     // * Get APIs
-    // Get All Users
-    app.get("/api/users", async (req, res) => {
+    // Get All Users [ADMIN]
+    app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const result = await userCollection.find().toArray();
         res.send(result);
@@ -46,8 +116,8 @@ async function run() {
       }
     });
 
-    // Check Admin
-    app.get("/api/users/admin/:email", async (req, res) => {
+    // Check Admin [LOGGEDIN USER]
+    app.get("/api/users/admin/:email", verifyToken, async (req, res) => {
       try {
         const email = req.params.email;
 
@@ -63,7 +133,24 @@ async function run() {
       }
     });
 
-    // Get Trending Articles
+    // Check Premium [LOGGEDIN USER]
+    app.get("/api/users/premium/:email", verifyToken, async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+        let premium = false;
+        if (user) {
+          premium = user?.isPremium === true;
+        }
+        res.send({ premium });
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // Get Trending Articles [PUBLIC]
     app.get("/api/trending-articles", async (req, res) => {
       try {
         const sort = { views: -1 };
@@ -81,7 +168,19 @@ async function run() {
       }
     });
 
-    // Get Publishers
+    // Get All Articles [PUBLIC]
+    app.get("/api/articles", (req, res) => {
+      const result = articleCollection.find({ isPublished: true }).toArray();
+    });
+
+    // Get All Premium Articles [LOGGEDIN USER => PREMIUM USER]
+    app.get("/api/articles", verifyToken, (req, res) => {
+      const result = articleCollection
+        .find({ isPublished: true, isPremium: true })
+        .toArray();
+    });
+
+    // Get Publishers [PUBLIC]
     app.get("/api/publishers", async (req, res) => {
       try {
         const publishers = await publisherCollection.find().toArray();
@@ -91,7 +190,7 @@ async function run() {
       }
     });
 
-    // Get Tags
+    // Get Tags [PUBLIC]
     app.get("/api/tags", async (req, res) => {
       try {
         const tags = await tagCollection.find().toArray();
@@ -101,7 +200,7 @@ async function run() {
       }
     });
 
-    // Get Reviews
+    // Get Reviews [PUBLIC]
     app.get("/api/reviews", async (req, res) => {
       try {
         const reviews = await reviewCollection.find().toArray();
@@ -112,7 +211,7 @@ async function run() {
     });
 
     // * Post APIs
-    // Post User
+    // Post User [AFTER LOGGEDIN/PUBLIC]
     app.post("/api/users", async (req, res) => {
       try {
         const user = req.body;
