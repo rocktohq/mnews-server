@@ -63,6 +63,16 @@ async function run() {
       res.send(err);
     }
 
+    // Get Tags
+    try {
+      app.get("/api/tags", async (req, res) => {
+        const tags = await tagCollection.find().toArray();
+        res.send(tags);
+      });
+    } catch (err) {
+      res.send(err);
+    }
+
    
 
     await client.db("admin").command({ ping: 1 });
