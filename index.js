@@ -106,10 +106,21 @@ async function run() {
     });
 
     // * Get APIs
-    // Get All Users [ADMIN ONLY]
+    // * Get All Users [ADMIN ONLY]
     app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const result = await userCollection.find().toArray();
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // * Get Single User [ADMIN]
+    app.get("/api/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      try {
+        const query = { _id: new ObjectId(req.params.id) };
+        const result = await userCollection.findOne(query);
         res.send(result);
       } catch (err) {
         res.send(err);
@@ -168,7 +179,7 @@ async function run() {
       }
     });
 
-    // Get All Articles [ADMIN ONLY]
+    // * Get All Articles [ADMIN ONLY]
     app.get(
       "/api/admin/articles",
       verifyToken,
@@ -271,16 +282,105 @@ async function run() {
 
     // * Post Publisher [ADMIN ONLY]
     app.post("/api/publishers", verifyToken, async (req, res) => {
-      const article = req.body;
-      const result = await articleCollection.insertOne(article);
-      res.send(result);
+      try {
+        const article = req.body;
+        const result = await articleCollection.insertOne(article);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
     });
 
-    // Post Article
+    // Post Article [LOGGEDIN USER]
     app.post("/api/articles", verifyToken, async (req, res) => {
-      const article = req.body;
-      const result = await articleCollection.insertOne(article);
-      res.send(result);
+      try {
+        const article = req.body;
+        const result = await articleCollection.insertOne(article);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // * Update APIs
+    // * Update User [ADMIN ONLY]
+    app.put("/api/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      try {
+        const user = req.body;
+        const query = { _id: new ObjectId(req.params.id) };
+        const updatedUser = {
+          $set: {
+            ...user,
+          },
+        };
+        const result = await userCollection.updateOne(query, updatedUser);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // * Update Article [ADMIN ONLY]
+    app.put("/api/articles/:id", verifyToken, verifyAdmin, async (req, res) => {
+      try {
+        const article = req.body;
+        const query = { _id: new ObjectId(req.params.id) };
+        const updatedArticle = {
+          $set: {
+            ...article,
+          },
+        };
+        const result = await articleCollection.updateOne(query, updatedArticle);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // Update Article [ARTICLE OWNER]
+    app.put("/api/articles/:id", verifyToken, async (req, res) => {
+      try {
+        if (req.user.email !== req.query.email) {
+          return res.status(403).send("Forbidden access");
+        }
+
+        const article = req.body;
+        const query = {
+          _id: new ObjectId(req.params.id),
+          "author.email": req.query.email,
+        };
+        const updatedArticle = {
+          $set: {
+            ...article,
+          },
+        };
+        const result = await articleCollection.updateOne(query, updatedArticle);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // * Update Publisher [ADMIN ONLY]
+    app.put("/api/publishers", verifyToken, verifyAdmin, async (req, res) => {
+      try {
+        const publisher = req.body;
+        const query = {
+          _id: new ObjectId(req.params.id),
+        };
+        const updatedPublisher = {
+          $set: {
+            ...publisher,
+          },
+        };
+        const result = await publisherCollection.updateOne(
+          query,
+          updatedPublisher
+        );
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
     });
 
     await client.db("admin").command({ ping: 1 });
