@@ -33,11 +33,43 @@ async function run() {
     const publisherCollection = client.db("mNews").collection("publishers");
     const tagCollection = client.db("mNews").collection("tags");
     const reviewCollection = client.db("mNews").collection("reviews");
+    const userCollection = client.db("mNews").collection("users");
 
     // * Get APIs
+    // Get All Users
+    app.get("/api/users", async (req, res) => {
+      try {
+        const result = await userCollection.find().toArray();
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // Check Admin
+    app.get("/api/users/admin/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        if (email !== req.decoded.email) {
+          return res.status(403).send({ message: "forbidden access" });
+        }
+
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+        let admin = false;
+        if (user) {
+          admin = user?.role === "admin";
+        }
+        res.send({ admin });
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
     // Get Trending Articles
-    try {
-      app.get("/api/trending-articles", async (req, res) => {
+    app.get("/api/trending-articles", async (req, res) => {
+      try {
         const sort = { views: -1 };
         const query = { isPublished: true };
         const limit = 6;
@@ -48,40 +80,61 @@ async function run() {
           .limit(limit)
           .toArray();
         res.send(articles);
-      });
-    } catch (err) {
-      res.send(err);
-    }
+      } catch (err) {
+        res.send(err);
+      }
+    });
 
     // Get Publishers
-    try {
-      app.get("/api/publishers", async (req, res) => {
+    app.get("/api/publishers", async (req, res) => {
+      try {
         const publishers = await publisherCollection.find().toArray();
         res.send(publishers);
-      });
-    } catch (err) {
-      res.send(err);
-    }
+      } catch (err) {
+        res.send(err);
+      }
+    });
 
     // Get Tags
-    try {
-      app.get("/api/tags", async (req, res) => {
+    app.get("/api/tags", async (req, res) => {
+      try {
         const tags = await tagCollection.find().toArray();
         res.send(tags);
-      });
-    } catch (err) {
-      res.send(err);
-    }
+      } catch (err) {
+        res.send(err);
+      }
+    });
 
     // Get Reviews
-    try {
-      app.get("/api/reviews", async (req, res) => {
+    app.get("/api/reviews", async (req, res) => {
+      try {
         const reviews = await reviewCollection.find().toArray();
         res.send(reviews);
-      });
-    } catch (err) {
-      res.send(err);
-    }
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // * Post APIs
+    // Post User
+    app.post("/api/users", async (req, res) => {
+      try {
+        const user = req.body;
+        // Check if user is exits
+        const query = { email: user.email };
+        const existingUser = await userCollection.findOne(query);
+        if (existingUser) {
+          return res.send({
+            message: "User already exists!",
+            insertedId: null,
+          });
+        }
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to MongoDB!");
