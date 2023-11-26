@@ -197,10 +197,21 @@ async function run() {
     // Get All Published Articles [PUBLIC]
     app.get("/api/articles", async (req, res) => {
       try {
-        const result = await articleCollection
+        const page = Number(req.query.page);
+        const limit = Number(req.query.limit);
+        const skip = page * limit;
+
+        const articles = await articleCollection
           .find({ status: "published" })
+          .skip(skip)
+          .limit(limit)
           .toArray();
-        res.send(result);
+
+        const articlesCount = await articleCollection.countDocuments({
+          status: "published",
+        });
+
+        res.send({ articles, articlesCount });
       } catch (err) {
         res.send(err);
       }
@@ -209,10 +220,23 @@ async function run() {
     // Get All Published Premium Articles [LOGGEDIN USER => PREMIUM USER]
     app.get("/api/premium-articles", verifyToken, async (req, res) => {
       try {
-        const result = await articleCollection
+        const page = Number(req.query.page);
+        const limit = Number(req.query.limit);
+        const skip = page * limit;
+
+        const articles = await articleCollection
           .find({ status: "published", isPremium: true })
+          .skip(skip)
+          .limit(limit)
           .toArray();
-        res.send(result);
+
+        // articlesCount
+        const articlesCount = await articleCollection.countDocuments({
+          status: "published",
+          isPremium: true,
+        });
+
+        res.send({ articles, articlesCount });
       } catch (err) {
         res.send(err);
       }
