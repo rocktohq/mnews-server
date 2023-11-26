@@ -206,12 +206,13 @@ async function run() {
       }
     });
 
-    // Get All Premium Articles [LOGGEDIN USER => PREMIUM USER]
-    app.get("/api/articles/premium", verifyToken, async (req, res) => {
+    // Get All Published Premium Articles [LOGGEDIN USER => PREMIUM USER]
+    app.get("/api/premium-articles", verifyToken, async (req, res) => {
       try {
         const result = await articleCollection
           .find({ status: "published", isPremium: true })
           .toArray();
+        res.send(result);
       } catch (err) {
         res.send(err);
       }
