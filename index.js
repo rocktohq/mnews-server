@@ -306,7 +306,7 @@ async function run() {
     });
 
     // * Post Publisher [ADMIN ONLY]
-    app.post("/api/publishers", verifyToken, async (req, res) => {
+    app.post("/api/publishers", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const article = req.body;
         const result = await articleCollection.insertOne(article);
