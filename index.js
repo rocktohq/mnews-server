@@ -346,7 +346,7 @@ async function run() {
     });
 
     // * Update Article [ADMIN ONLY]
-    app.put("/api/articles/:id", verifyToken, verifyAdmin, async (req, res) => {
+    app.put("/api/admin/articles/:id", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const article = req.body;
         const query = { _id: new ObjectId(req.params.id) };
