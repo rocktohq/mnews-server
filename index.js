@@ -254,6 +254,22 @@ async function run() {
       }
     });
 
+    // Get User Articles
+    app.get("/api/my-articles", verifyToken, async (req, res) => {
+      try {
+        if (req.user.email !== req.query.email) {
+          return res.status(403).send("Forbidden access");
+        }
+
+        const result = await articleCollection
+          .find({ "author.email": req.query.email })
+          .toArray();
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
     // Get Publishers [PUBLIC]
     app.get("/api/publishers", async (req, res) => {
       try {
@@ -328,14 +344,14 @@ async function run() {
     });
 
     // * Update APIs
-    // * Update User [ADMIN ONLY]
-    app.put("/api/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+    // * Update User [ADMIN / USER]
+    app.put("/api/users/:id", verifyToken, async (req, res) => {
       try {
         const user = req.body;
         const query = { _id: new ObjectId(req.params.id) };
         const updatedUser = {
           $set: {
-            ...user,
+            name: user.name,
           },
         };
         const result = await userCollection.updateOne(query, updatedUser);
@@ -346,21 +362,29 @@ async function run() {
     });
 
     // * Update Article [ADMIN ONLY]
-    app.put("/api/admin/articles/:id", verifyToken, verifyAdmin, async (req, res) => {
-      try {
-        const article = req.body;
-        const query = { _id: new ObjectId(req.params.id) };
-        const updatedArticle = {
-          $set: {
-            ...article,
-          },
-        };
-        const result = await articleCollection.updateOne(query, updatedArticle);
-        res.send(result);
-      } catch (error) {
-        res.send(error);
+    app.put(
+      "/api/admin/articles/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const article = req.body;
+          const query = { _id: new ObjectId(req.params.id) };
+          const updatedArticle = {
+            $set: {
+              ...article,
+            },
+          };
+          const result = await articleCollection.updateOne(
+            query,
+            updatedArticle
+          );
+          res.send(result);
+        } catch (error) {
+          res.send(error);
+        }
       }
-    });
+    );
 
     // Update Article [ARTICLE OWNER]
     app.put("/api/articles/:id", verifyToken, async (req, res) => {
@@ -370,6 +394,7 @@ async function run() {
         }
 
         const article = req.body;
+        const options = {};
         const query = {
           _id: new ObjectId(req.params.id),
           "author.email": req.query.email,
@@ -379,7 +404,36 @@ async function run() {
             ...article,
           },
         };
-        const result = await articleCollection.updateOne(query, updatedArticle);
+        const result = await articleCollection.updateOne(
+          query,
+          updatedArticle,
+          options
+        );
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // Update Article Views
+    app.put("/api/articles/counter/:id", async (req, res) => {
+      try {
+        const views = req.body;
+        const query = {
+          _id: new ObjectId(req.params.id),
+        };
+        const options = {};
+        const updatedArticle = {
+          $set: {
+            ...views,
+          },
+        };
+        console.log(updatedArticle);
+        const result = await articleCollection.updateOne(
+          query,
+          updatedArticle,
+          options
+        );
         res.send(result);
       } catch (error) {
         res.send(error);
@@ -402,6 +456,21 @@ async function run() {
           query,
           updatedPublisher
         );
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // * Delete APs
+    app.delete("/api/articles/:id", verifyToken, async (req, res) => {
+      try {
+        if (req.user.email !== req.query.email) {
+          return res.status(403).send("Forbidden access");
+        }
+        const result = await articleCollection.deleteOne({
+          _id: new ObjectId(req.params.id),
+        });
         res.send(result);
       } catch (error) {
         res.send(error);
