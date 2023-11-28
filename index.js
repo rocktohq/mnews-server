@@ -109,7 +109,7 @@ async function run() {
 
     // * Get APIs
     // * Get All Users [ADMIN ONLY]
-    app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
+    app.get("/api/admin/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const result = await userCollection.find().toArray();
         res.send(result);
@@ -425,7 +425,7 @@ async function run() {
         };
         const updatedUser = {
           $set: {
-            name: user.name,
+            ...user,
           },
         };
         const result = await userCollection.updateOne(query, updatedUser);
@@ -434,6 +434,30 @@ async function run() {
         res.send(error);
       }
     });
+
+    // * Make Admin
+    app.put(
+      "/api/admin/users/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const user = req.body;
+          const query = {
+            _id: new ObjectId(req.params.id),
+          };
+          const updatedUser = {
+            $set: {
+              ...user,
+            },
+          };
+          const result = await userCollection.updateOne(query, updatedUser);
+          res.send(result);
+        } catch (error) {
+          res.send(error);
+        }
+      }
+    );
 
     // * Update Article [ADMIN ONLY]
     app.put(
@@ -449,6 +473,7 @@ async function run() {
               ...article,
             },
           };
+          console.log(updatedArticle);
           const result = await articleCollection.updateOne(
             query,
             updatedArticle
@@ -502,7 +527,7 @@ async function run() {
             ...views,
           },
         };
-        console.log(updatedArticle);
+        
         const result = await articleCollection.updateOne(
           query,
           updatedArticle,
@@ -536,7 +561,8 @@ async function run() {
       }
     });
 
-    // * Delete APs
+    // * Delete APIs
+    // Delete Article
     app.delete("/api/articles/:id", verifyToken, async (req, res) => {
       try {
         if (req.user.email !== req.query.email) {
@@ -550,6 +576,40 @@ async function run() {
         res.send(error);
       }
     });
+
+    // Delete Article
+    app.delete(
+      "/api/admin/articles/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const result = await articleCollection.deleteOne({
+            _id: new ObjectId(req.params.id),
+          });
+          res.send(result);
+        } catch (error) {
+          res.send(error);
+        }
+      }
+    );
+
+    // * Delete Publisher
+    app.delete(
+      "/api/publishers/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const result = await publisherCollection.deleteOne({
+            _id: new ObjectId(req.params.id),
+          });
+          res.send(result);
+        } catch (error) {
+          res.send(error);
+        }
+      }
+    );
 
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to MongoDB!");
