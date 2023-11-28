@@ -111,8 +111,16 @@ async function run() {
     // * Get All Users [ADMIN ONLY]
     app.get("/api/admin/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
-        const result = await userCollection.find().toArray();
-        res.send(result);
+        const page = parseInt(req.query.page);
+        const size = parseInt(req.query.size);
+        const userCount = await articleCollection.countDocuments();
+
+        const result = await userCollection
+          .find()
+          .skip(page * size)
+          .limit(size)
+          .toArray();
+        res.send({ users: result, userCount });
       } catch (err) {
         res.send(err);
       }
@@ -188,8 +196,15 @@ async function run() {
       verifyAdmin,
       async (req, res) => {
         try {
-          const result = await articleCollection.find().toArray();
-          res.send(result);
+          const page = parseInt(req.query.page);
+          const size = parseInt(req.query.size);
+          const articleCount = await articleCollection.countDocuments();
+          const result = await articleCollection
+            .find()
+            .skip(page * size)
+            .limit(size)
+            .toArray();
+          res.send({ articles: result, articleCount });
         } catch (err) {
           res.send(err);
         }
@@ -199,19 +214,41 @@ async function run() {
     // Get All Published Articles [PUBLIC]
     app.get("/api/articles", async (req, res) => {
       try {
-        const page = Number(req.query.page);
+        const page = Number(req.query.offset);
         const limit = Number(req.query.limit);
         const skip = page * limit;
+        const search = req.query.search;
+        const publisher = req.query.publisher;
+        const tag = req.query.tag;
 
+        // console.log(req.query);
+
+        let query = { status: "published" };
+        if (publisher) {
+          query = {
+            "publisher.name": { $regex: publisher, $options: "i" },
+            status: "published",
+          };
+        }
+        if (tag) {
+          query = {
+            tags: { $in: [tag] },
+            status: "published",
+          };
+        }
+        if (search) {
+          query = {
+            title: { $regex: search, $options: "i" },
+            status: "published",
+          };
+        }
         const articles = await articleCollection
-          .find({ status: "published" })
+          .find(query)
           .skip(skip)
           .limit(limit)
           .toArray();
 
-        const articlesCount = await articleCollection.countDocuments({
-          status: "published",
-        });
+        const articlesCount = await articleCollection.countDocuments(query);
 
         res.send({ articles, articlesCount });
       } catch (err) {
@@ -222,7 +259,7 @@ async function run() {
     // Get All Published Premium Articles [LOGGEDIN USER => PREMIUM USER]
     app.get("/api/premium-articles", verifyToken, async (req, res) => {
       try {
-        const page = Number(req.query.page);
+        const page = Number(req.query.offset);
         const limit = Number(req.query.limit);
         const skip = page * limit;
 
@@ -245,7 +282,7 @@ async function run() {
     });
 
     // Get Single Article [LOGGEDIN USER]
-    app.get("/api/articles/:id", verifyToken, async (req, res) => {
+    app.get("/api/articles/:id", async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id), status: "published" };
@@ -417,8 +454,6 @@ async function run() {
           return res.status(403).send("Forbidden access");
         }
 
-        console.log(req.user.email, req.params.email);
-
         const user = req.body;
         const query = {
           email: req.params.email,
@@ -473,7 +508,7 @@ async function run() {
               ...article,
             },
           };
-          console.log(updatedArticle);
+
           const result = await articleCollection.updateOne(
             query,
             updatedArticle
@@ -527,7 +562,7 @@ async function run() {
             ...views,
           },
         };
-        
+
         const result = await articleCollection.updateOne(
           query,
           updatedArticle,
