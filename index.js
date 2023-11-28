@@ -301,7 +301,7 @@ async function run() {
     });
 
     // * Get Admin Stats
-    app.get("/api/admin/stats", async (req, res) => {
+    app.get("/api/admin/stats", verifyToken, async (req, res) => {
       try {
         const stats = await publisherCollection
           .aggregate([
@@ -317,16 +317,53 @@ async function run() {
               $group: {
                 _id: "$_id",
                 publisherName: { $first: "$name" },
-                articleCount: { $sum: { $size: '$articles' }},
+                articleCount: { $sum: { $size: "$articles" } },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                name: "$publisherName",
+                count: "$articleCount",
               },
             },
           ])
           .toArray();
-        res.send(stats);
+
+        const data = [["Publisher", "Articles"]];
+        stats.map((stat) => data.push([stat.name, stat.count]));
+
+        res.send(data);
       } catch (error) {
         res.send(error);
       }
     });
+
+    // User Counter
+    app.get("/api/user-stats", async (req, res) => {
+      try {
+        const allUsers = await userCollection.countDocuments();
+        const normalUsers = await userCollection.countDocuments({
+          isPremium: false,
+        });
+        const premiumUsers = await userCollection.countDocuments({
+          isPremium: true,
+        });
+
+        res.send({
+          stats: [
+            ["Users", "Count"],
+            ["Total Users", allUsers],
+            ["Normal Users", normalUsers],
+            ["Premium Users", premiumUsers],
+          ],
+          count: { allUsers, normalUsers, premiumUsers },
+        });
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
     // * Post APIs
     // Post User [AFTER LOGGEDIN/PUBLIC]
     app.post("/api/users", async (req, res) => {
