@@ -22,29 +22,6 @@ app.use(
   })
 );
 
-// Token Verification
-const verifyToken = (req, res, next) => {
-  const token = req?.cookies?.token;
-  if (!token) return res.status(401).send({ message: "Unauthorized access" });
-  jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
-    if (error) return res.status(401).send({ message: "Unauthorized access" });
-    req.user = decoded;
-    next();
-  });
-};
-
-// Admin Verification
-const verifyAdmin = async (req, res, next) => {
-  const email = req.decoded.email;
-  const query = { email: email };
-  const user = await userCollection.findOne(query);
-  const isAdmin = user?.role === "admin";
-  if (!isAdmin) {
-    return res.status(403).send({ message: "Forbidden access" });
-  }
-  next();
-};
-
 // * Default Route
 app.get("/", (req, res) => {
   res.send("mNews Server is running...");
@@ -104,6 +81,31 @@ async function run() {
         res.send(err);
       }
     });
+
+    // Token Verification
+    const verifyToken = (req, res, next) => {
+      const token = req?.cookies?.token;
+      if (!token)
+        return res.status(401).send({ message: "Unauthorized access" });
+      jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+        if (error)
+          return res.status(401).send({ message: "Unauthorized access" });
+        req.user = decoded;
+        next();
+      });
+    };
+
+    // Admin Verification
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.user.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+      next();
+    };
 
     // * Get APIs
     // * Get All Users [ADMIN ONLY]
@@ -388,8 +390,8 @@ async function run() {
     // * Post Publisher [ADMIN ONLY]
     app.post("/api/publishers", verifyToken, verifyAdmin, async (req, res) => {
       try {
-        const article = req.body;
-        const result = await articleCollection.insertOne(article);
+        const publisher = req.body;
+        const result = await publisherCollection.insertOne(publisher);
         res.send(result);
       } catch (error) {
         res.send(error);
@@ -409,10 +411,18 @@ async function run() {
 
     // * Update APIs
     // * Update User [ADMIN / USER]
-    app.put("/api/users/:id", verifyToken, async (req, res) => {
+    app.put("/api/users/:email", verifyToken, async (req, res) => {
       try {
+        if (req.user.email !== req.params.email) {
+          return res.status(403).send("Forbidden access");
+        }
+
+        console.log(req.user.email, req.params.email);
+
         const user = req.body;
-        const query = { _id: new ObjectId(req.params.id) };
+        const query = {
+          email: req.params.email,
+        };
         const updatedUser = {
           $set: {
             name: user.name,
