@@ -300,6 +300,33 @@ async function run() {
       }
     });
 
+    // * Get Admin Stats
+    app.get("/api/admin/stats", async (req, res) => {
+      try {
+        const stats = await publisherCollection
+          .aggregate([
+            {
+              $lookup: {
+                from: "articles",
+                localField: "name",
+                foreignField: "publisher.name",
+                as: "articles",
+              },
+            },
+            {
+              $group: {
+                _id: "$_id",
+                publisherName: { $first: "$name" },
+                articleCount: { $sum: { $size: '$articles' }},
+              },
+            },
+          ])
+          .toArray();
+        res.send(stats);
+      } catch (error) {
+        res.send(error);
+      }
+    });
     // * Post APIs
     // Post User [AFTER LOGGEDIN/PUBLIC]
     app.post("/api/users", async (req, res) => {
