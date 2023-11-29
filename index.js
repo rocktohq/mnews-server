@@ -739,7 +739,6 @@ async function run() {
             ...user,
           },
         };
-        console.log(user)
         const result = await userCollection.updateOne(query, updatedUser);
         res.send(result);
       } catch (error) {
@@ -747,8 +746,8 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("You successfully connected to MongoDB!");
   } finally {
   }
 }
