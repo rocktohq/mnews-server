@@ -261,6 +261,12 @@ async function run() {
     // Get All Published Premium Articles [LOGGEDIN USER => PREMIUM USER]
     app.get("/api/premium-articles", verifyToken, async (req, res) => {
       try {
+        const email = req.user.email;
+        const isPremiumMember = await userCollection.findOne({ email: email });
+        if (!isPremiumMember.isPremium) {
+          return res.status(403).send("Forbidden access");
+        }
+
         const page = Number(req.query.offset);
         const limit = Number(req.query.limit);
         const skip = page * limit;
