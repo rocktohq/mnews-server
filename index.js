@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -47,6 +48,7 @@ async function run() {
     const tagCollection = client.db("mNews").collection("tags");
     const reviewCollection = client.db("mNews").collection("reviews");
     const userCollection = client.db("mNews").collection("users");
+    const paymentCollection = client.db("mNews").collection("payments");
 
     // * JWT Related APIs
     // JWT API
@@ -127,9 +129,9 @@ async function run() {
     });
 
     // * Get Single User [ADMIN]
-    app.get("/api/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+    app.get("/api/users/:email", async (req, res) => {
       try {
-        const query = { _id: new ObjectId(req.params.id) };
+        const query = { email: req.params.email };
         const result = await userCollection.findOne(query);
         res.send(result);
       } catch (err) {
@@ -645,6 +647,105 @@ async function run() {
         }
       }
     );
+
+    // * Payment Related APIs
+    // Post Payment Information
+    app.post("/api/payments", verifyToken, async (req, res) => {
+      const payment = req.body;
+      const existsPayment = await paymentCollection.findOne({
+        email: payment.email,
+      });
+      if (existsPayment) {
+        const updatedPayment = {
+          $set: {
+            ...payment,
+          },
+        };
+        const result = await paymentCollection.updateOne(
+          { email: payment.email },
+          updatedPayment
+        );
+        return res.send(result);
+      }
+      const result = await paymentCollection.insertOne(payment);
+
+      res.send(result);
+    });
+
+    // Get Payment Information
+    app.get("/api/payments/:email", verifyToken, async (req, res) => {
+      const query = { email: req.params.email };
+      if (req.params.email !== req.user.email) {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+      const result = await paymentCollection.findOne(query);
+      res.send(result);
+    });
+
+    // Create Payment Intent
+    app.post("/api/create-payment-intent", verifyToken, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // Update Payment
+    app.put("/api/payments", verifyToken, async (req, res) => {
+      try {
+        const payment = req.body;
+        await paymentCollection.deleteOne({
+          email: payment.email,
+        });
+        console.log(payment);
+
+        // Change User Status
+        const updatedUser = {
+          $set: {
+            isPremium: payment.isPremium,
+            startTime: payment.startTime,
+            duration: payment.duration,
+          },
+        };
+        const result = await userCollection.updateOne(
+          { email: payment.email },
+          updatedUser
+        );
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
+
+    // Remove Premium
+    app.put("/api/remove-premium/:email", verifyToken, async (req, res) => {
+      if (req.params.email !== req.user.email) {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+
+      try {
+        const email = req.params.email;
+        const user = req.body;
+        const query = { email };
+        const updatedUser = {
+          $set: {
+            ...user,
+          },
+        };
+        console.log(user)
+        const result = await userCollection.updateOne(query, updatedUser);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to MongoDB!");
