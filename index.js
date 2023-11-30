@@ -223,8 +223,6 @@ async function run() {
         const publisher = req.query.publisher;
         const tag = req.query.tag;
 
-        // console.log(req.query);
-
         let query = { status: "published" };
         if (publisher) {
           query = {
@@ -261,11 +259,11 @@ async function run() {
     // Get All Published Premium Articles [LOGGEDIN USER => PREMIUM USER]
     app.get("/api/premium-articles", verifyToken, async (req, res) => {
       try {
-        const email = req.user.email;
-        const isPremiumMember = await userCollection.findOne({ email: email });
-        if (!isPremiumMember.isPremium) {
-          return res.status(403).send("Forbidden access");
-        }
+        // console.log(req.user.email);
+        // const user = await userCollection.findOne({ email: req.user.email });
+        // if (!user?.isPremium || user?.role !== "admin") {
+        //   return res.status(403).send("Forbidden access");
+        // }
 
         const page = Number(req.query.offset);
         const limit = Number(req.query.limit);
@@ -289,12 +287,28 @@ async function run() {
       }
     });
 
-    // Get Single Article [LOGGEDIN USER]
+    // Get Single Article
     app.get("/api/articles/:id", async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id), status: "published" };
         const result = await articleCollection.findOne(query);
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
+
+    // Get Single Article [OWNER]
+    app.get("/api/articles/owner/:id", verifyToken, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await articleCollection.findOne(query);
+
+        if (result?.author.email !== req.user.email) {
+          return res.status(403).send("Forbidden access");
+        }
         res.send(result);
       } catch (err) {
         res.send(err);
@@ -710,7 +724,6 @@ async function run() {
         await paymentCollection.deleteOne({
           email: payment.email,
         });
-        console.log(payment);
 
         // Change User Status
         const updatedUser = {
