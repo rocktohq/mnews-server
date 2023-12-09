@@ -4,6 +4,7 @@
 - ExpressJS
 - MongoDB
 - JWT
+- Stripe
 
 ## Setup
 
@@ -15,10 +16,10 @@ npm install
 
 ### Environment variables
 ```javascript
-DB_USER= //MongoDB DB User
-DB_PASS= //MongoDB DB Password
-JWT_SECRET= //JWT Secret Key
-STRIPE_SECRET= // Stripe Secret Key
+DB_USER=MongoDB_DB_User
+DB_PASS=MongoDB_DB_Password
+JWT_SECRET=JWT_Secret_Key
+STRIPE_SECRET=Stripe_Secret_Key
 ```
 
 ### Run the server:
