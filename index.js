@@ -5,7 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
-
+const nodemailer = require("nodemailer");
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -21,6 +21,28 @@ app.use(
     ],
     credentials: true,
   })
+);
+
+// Mailer Function
+const transporter = nodemailer.createTransport(
+  {
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // upgrade later with STARTTLS
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  },
+  {
+    // default message fields
+    // sender info
+    from: "mNews <itzmonir@gmail.com.com>",
+    headers: {
+      "X-Laziness-level": 1000,
+    },
+  }
 );
 
 // * Default Route
@@ -737,6 +759,30 @@ async function run() {
           { email: payment.email },
           updatedUser
         );
+        // Send the payment message
+        const message = {
+          // Comma separated list of recipients
+          to: `Nodemailer <${payment.email}>`,
+
+          // Subject of the message
+          subject: "Payment Successful!",
+
+          // plaintext body
+          text: "Your payment was successful. Enjoy your premium subscription.",
+        };
+
+        transporter.sendMail(message, (error, info) => {
+          if (error) {
+            console.log("Error occurred");
+            console.log(error.message);
+          }
+
+          console.log("Message sent successfully!");
+          console.log(nodemailer.getTestMessageUrl(info));
+
+          // only needed when using pooled connections
+          transporter.close();
+        });
         res.send(result);
       } catch (error) {
         res.send(error);
@@ -759,6 +805,30 @@ async function run() {
           },
         };
         const result = await userCollection.updateOne(query, updatedUser);
+        // Send the payment message
+        const message = {
+          // Comma separated list of recipients
+          to: `Nodemailer <${payment.email}>`,
+
+          // Subject of the message
+          subject: "Subscription Removed!",
+
+          // plaintext body
+          text: "Your premium subscription was removed.",
+        };
+
+        transporter.sendMail(message, (error, info) => {
+          if (error) {
+            console.log("Error occurred");
+            console.log(error.message);
+          }
+
+          console.log("Message sent successfully!");
+          console.log(nodemailer.getTestMessageUrl(info));
+
+          // only needed when using pooled connections
+          transporter.close();
+        });
         res.send(result);
       } catch (error) {
         res.send(error);
