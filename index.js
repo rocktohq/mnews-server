@@ -762,8 +762,8 @@ async function run() {
         // Send the payment message
         const message = {
           // Comma separated list of recipients
-          to: `Nodemailer <${payment.email}>`,
-
+          from: `${process.env.EMAIL_USER}`,
+          to: `${payment.email}`,
           // Subject of the message
           subject: "Payment Successful!",
 
@@ -808,8 +808,8 @@ async function run() {
         // Send the payment message
         const message = {
           // Comma separated list of recipients
-          to: `Nodemailer <${payment.email}>`,
-
+          from: `${process.env.EMAIL_USER}`,
+          to: `${payment.email}`,
           // Subject of the message
           subject: "Subscription Removed!",
 
